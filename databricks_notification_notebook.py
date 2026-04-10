@@ -12,8 +12,8 @@ from datetime import datetime
 # 1. CONFIGURATION
 # =========================================================================
 # Update this path to where your anomalies.json is stored (e.g., /dbfs/mnt/...)
-RENDER_API_URL = "https://your-app.onrender.com"
-DASHBOARD_URL = "https://your-app.onrender.com/"
+RENDER_API_URL = "https://nexora-anomaly-dashboard.onrender.com"
+DASHBOARD_URL = "https://nexora-anomaly-dashboard.onrender.com/"
 NEXORA_API_TOKEN = "abhidyu_made_this_code_by_himself_nexora_secure_2026"
 SENDGRID_API_KEY = "YOUR_SENDGRID_API_KEY"
 SENDER_EMAIL = "aakash.lal@procdna.com"

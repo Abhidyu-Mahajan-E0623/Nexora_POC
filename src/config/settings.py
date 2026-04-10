@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     ANOMALY_RESCUED_ROW_LIMIT: int = 500
     ENVIRONMENT: str = "Production"
 
+    # Notifications & Dashboard
+    MONITORING_DASHBOARD_URL: str = "https://nexora-anomaly-dashboard.onrender.com/"
+    ALERT_RECIPIENTS: str = "naincy.saxena@procdna.com, vaibhav.maheshwari@procdna.com, aakash.lal@procdna.com, ulka.jambhulkar@procdna.com, rishabh.gupta@procdna.com"
+
     # Security
     NEXORA_API_TOKEN: str = "abhidyu_made_this_code_by_himself_nexora_secure_2026"
 
