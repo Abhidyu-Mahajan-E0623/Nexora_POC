@@ -14,7 +14,7 @@ from datetime import datetime
 # Update this path to where your anomalies.json is stored (e.g., /dbfs/mnt/...)
 RENDER_API_URL = "https://your-app.onrender.com"
 DASHBOARD_URL = "https://your-app.onrender.com/"
-API_KEY = "nexora-default-token-123"
+API_KEY = "Abhidyumadethiscode-SECURE-2026"
 SENDGRID_API_KEY = "YOUR_SENDGRID_API_KEY"
 SENDER_EMAIL = "aakash.lal@procdna.com"
 RECIPIENTS = ["naincy.saxena@procdna.com", "vaibhav.maheshwari@procdna.com", "aakash.lal@procdna.com"]

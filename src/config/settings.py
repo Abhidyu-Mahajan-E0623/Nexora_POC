@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "Production"
 
     # Security
-    API_KEY: str = "nexora-default-token-123"
+    API_KEY: str = "Abhidyumadethiscode-SECURE-2026"
 
     APP_NAME: str = "schema-maker"
     APP_VERSION: str = "0.2.0"
