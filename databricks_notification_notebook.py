@@ -1,139 +1,123 @@
-# Databricks Notebook: Anomaly Notification Alert
+# Databricks Notebook: Pipeline Gatekeeper & Notifications
 # -------------------------------------------------------------------------
-# Copy this code into a Databricks Python Notebook.
-# This notebook can be added as a task to your Databricks Workflow.
+# This notebook handles the logic for Task 2 (Gatekeeper) in your pipeline.
+# It checks with the FastAPI backend for any detected anomalies.
 # -------------------------------------------------------------------------
 
 import requests
 import json
 from datetime import datetime
-from pathlib import Path
 
 # =========================================================================
 # 1. CONFIGURATION
 # =========================================================================
-# For production, use Databricks Secrets to fetch these values:
-# SENDGRID_API_KEY = dbutils.secrets.get(scope="your_scope", key="sendgrid_api_key")
+# The URL of your FastAPI server hosted on Render
+RENDER_API_URL = "https://your-app.onrender.com"
 
+# SendGrid Configuration (for the alert email)
 SENDGRID_API_KEY = "YOUR_SENDGRID_API_KEY"
 SENDER_EMAIL = "aakash.lal@procdna.com"
 RECIPIENTS = ["naincy.saxena@procdna.com", "vaibhav.maheshwari@procdna.com", "aakash.lal@procdna.com"]
 
-# Update this path to where your anomalies.json is stored (e.g., /dbfs/mnt/...)
-ANOMALY_JSON_PATH = "/dbfs/mnt/nexora/Output/Anomaly/latest/anomalies.json"
-DASHBOARD_URL = "https://azureapi-instance-gzd2h9dzhafbbcgv.centralus-01.azurewebsites.net/"
+# Dashboard URL for the "Open Dashboard" button
+DASHBOARD_URL = "https://your-app.onrender.com/"
 
 # =========================================================================
-# 2. EMAIL ALERT FUNCTION
+# 2. HELPER: SEND EMAIL ALERT
 # =========================================================================
 def send_data_quality_alert(run_id, total_anomalies, environment="Production"):
-    
     timestamp = datetime.now().strftime("%B %d, %Y at %H:%M:%S UTC")
     incident_id = f"DQ-{datetime.now().strftime('%Y%m%d')}-{run_id}"
     
     html = f"""
     <!DOCTYPE html>
     <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    <body style="margin:0;padding:0;background:#f5f5f5">
-        <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:700px;margin:0 auto;background:#ffffff">
-            <div style="background:#b91c1c;height:6px"></div>
-            <div style="background:linear-gradient(135deg,#1e293b 0%,#334155 100%);color:white;padding:30px 40px">
-                <table style="width:100%">
-                    <tr>
-                        <td>
-                            <p style="margin:0;font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">Data Quality Alert</p>
-                            <h1 style="margin:10px 0 0;font-size:22px;font-weight:600">Pipeline Execution Halted</h1>
-                        </td>
-                        <td style="text-align:right;vertical-align:top">
-                            <span style="background:#fbbf24;color:#1e293b;padding:6px 14px;border-radius:4px;font-size:12px;font-weight:600">HIGH PRIORITY</span>
-                        </td>
-                    </tr>
-                </table>
+    <body style="margin:0;padding:0;background:#f5f5f5;font-family:sans-serif;">
+        <div style="max-width:700px;margin:0 auto;background:#ffffff;border-top:6px solid #b91c1c;">
+            <div style="background:#1e293b;color:white;padding:30px 40px">
+                <h1 style="margin:0;font-size:22px;">Pipeline Execution Halted</h1>
+                <p style="margin:5px 0 0;color:#94a3b8;font-size:12px;text-transform:uppercase;">Data Quality Alert</p>
             </div>
-            
-            <div style="background:#f8fafc;padding:15px 40px;border-bottom:1px solid #e2e8f0">
-                <table style="width:100%;font-size:13px;color:#64748b">
-                    <tr>
-                        <td><b>Incident ID:</b> {incident_id}</td>
-                        <td style="text-align:center"><b>Environment:</b> {environment}</td>
-                        <td style="text-align:right"><b>Detected:</b> {timestamp}</td>
-                    </tr>
-                </table>
-            </div>
-            
             <div style="padding:30px 40px">
-                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:20px;margin-bottom:25px">
-                    <table style="width:100%">
-                        <tr>
-                            <td style="width:50px;vertical-align:top">
-                                <div style="background:#dc2626;width:40px;height:40px;border-radius:50%;text-align:center;line-height:40px">
-                                    <span style="color:white;font-size:20px">!</span>
-                                </div>
-                            </td>
-                            <td style="padding-left:15px">
-                                <h3 style="margin:0 0 8px;color:#991b1b;font-size:16px">{total_anomalies} Anomalies Detected in Bronze Layer</h3>
-                                <p style="margin:0;color:#7f1d1d;font-size:14px;line-height:1.5">
-                                    The automated data quality gate has identified anomalies in the source data. 
-                                    Downstream processing has been suspended pending review.
-                                </p>
-                            </td>
-                        </tr>
-                    </table>
+                <div style="background:#fef2f2;border:1px solid #fecaca;padding:20px;margin-bottom:25px;border-radius:8px;">
+                    <h3 style="margin:0 0 8px;color:#991b1b;">{total_anomalies} Anomalies Detected in Bronze Layer</h3>
+                    <p style="margin:0;font-size:14px;color:#7f1d1d;">
+                        The automated data quality gate has identified anomalies. 
+                        Downstream processing to Silver has been suspended pending review.
+                    </p>
                 </div>
-
-                <div style="text-align:center;margin:30px 0;">
-                    <a href="{DASHBOARD_URL}"
-                    style="display:inline-block;background-color:#2563eb;color:#ffffff;padding:14px 32px;text-decoration:none;border-radius:6px;font-weight:600;">
-                    Open Monitoring Dashboard →
-                </a>
-            </div>
-            </div>
-            
-            <div style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0">
-                <p style="text-align:center;color:#94a3b8;font-size:12px;margin:0">Automated Alert • Incident ID: {incident_id}</p>
+                <table style="width:100%;border-collapse:collapse;margin-bottom:25px;font-size:13px;">
+                    <tr><td style="padding:10px;background:#f8fafc;border:1px solid #e2e8f0;width:30%;">Run ID</td><td style="padding:10px;border:1px solid #e2e8f0;font-family:monospace;">{run_id}</td></tr>
+                    <tr><td style="padding:10px;background:#f8fafc;border:1px solid #e2e8f0;">Detected At</td><td style="padding:10px;border:1px solid #e2e8f0;">{timestamp}</td></tr>
+                </table>
+                <div style="text-align:center;">
+                    <a href="{DASHBOARD_URL}" style="display:inline-block;background:#2563eb;color:white;padding:14px 32px;text-decoration:none;border-radius:6px;font-weight:600;">Open Monitoring Dashboard →</a>
+                </div>
             </div>
         </div>
     </body>
     </html>
     """
     
-    subject = f"🚨 [Action Required] Data Quality Alert - Pipeline Halted | {incident_id}"
-    
-    response = requests.post(
+    requests.post(
         "https://api.sendgrid.com/v3/mail/send",
         headers={"Authorization": f"Bearer {SENDGRID_API_KEY}", "Content-Type": "application/json"},
         json={
             "personalizations": [{"to": [{"email": e} for e in RECIPIENTS]}],
-            "from": {"email": SENDER_EMAIL, "name": "Data Quality alerts"},
-            "subject": subject,
+            "from": {"email": SENDER_EMAIL, "name": "Nexora Alerts"},
+            "subject": f"🚨 [Action Required] Data Quality Alert - Pipeline Halted | {incident_id}",
             "content": [{"type": "text/html", "value": html}]
         }
     )
-    
-    if response.status_code in [200, 202]:
-        print(f"✅ Alert dispatched successfully: {incident_id}")
-    else:
-        print(f"❌ Dispatch failed: {response.text}")
 
 # =========================================================================
-# 3. EXECUTION LOGIC
+# 3. PART A: SUBMIT REPORT (USE THIS IN TASK 1)
 # =========================================================================
-try:
-    with open(ANOMALY_JSON_PATH, "r") as f:
-        data = json.load(f)
-        total_anomalies = data.get("total_anomalies", 0)
-        run_id = data.get("run_id", "unknown")
-        
-        if total_anomalies > 0:
-            send_data_quality_alert(run_id, total_anomalies)
+# After running your anomaly detection scan in Task 1, use this to upload the report to Render:
+def upload_report_to_render(report_dict):
+    try:
+        resp = requests.post(f"{RENDER_API_URL}/api/report", json={"report_data": report_dict})
+        if resp.status_code == 200:
+            print("Successfully uploaded report to Render.")
         else:
-            print("No anomalies detected. Skipping notification.")
+            print(f"Failed to upload report: {resp.text}")
+    except Exception as e:
+        print(f"Error connecting to Render: {e}")
 
-except FileNotFoundError:
-    print(f"Error: Anomaly report not found at {ANOMALY_JSON_PATH}")
-except Exception as e:
-    print(f"Unexpected error: {e}")
+# =========================================================================
+# 4. PART B: GATEKEEPER CHECK (USE THIS IN TASK 2)
+# =========================================================================
+def run_gatekeeper_check():
+    try:
+        print(f"Checking gatekeeper status at {RENDER_API_URL}...")
+        resp = requests.get(f"{RENDER_API_URL}/api/gatekeeper")
+        
+        if resp.status_code == 200:
+            report = resp.json()
+            
+            # If the response is NOT empty, it means anomalies were found
+            if report and report.get("total_anomalies", 0) > 0:
+                print(f"!!!! ANOMALIES DETECTED: {report['total_anomalies']} found !!!!")
+                
+                # 1. Send the Alert Email
+                send_data_quality_alert(report.get("run_id", "unknown"), report["total_anomalies"])
+                
+                # 2. Halt the Pipeline (Pause)
+                # In Databricks, this will fail the notebook and stop downstream tasks
+                raise Exception(f"Pipeline Halted: {report['total_anomalies']} anomalies detected in Bronze.")
+            else:
+                print("No anomalies detected. Proceeding to next task.")
+        else:
+            print(f"Warning: Gatekeeper API returned {resp.status_code}. Proceeding with caution.")
+            
+    except Exception as e:
+        # If the API is down or errors, we typically halt or alert
+        if "Pipeline Halted" in str(e):
+            raise e
+        print(f"Gatekeeper error: {e}")
+
+# =========================================================================
+# MAIN EXECUTION
+# =========================================================================
+# In Task 2 (Gatekeeper Notebook), just run this:
+run_gatekeeper_check()

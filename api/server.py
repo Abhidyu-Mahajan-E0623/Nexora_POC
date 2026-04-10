@@ -21,6 +21,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DASHBOARD_DIR = PROJECT_ROOT / "dashboard"
 OUTPUT_DIR = PROJECT_ROOT / "Output"
 
+# In-memory store for the latest anomaly report (essential for Render free tier)
+_LATEST_REPORT: dict | None = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -111,6 +114,12 @@ class AnomalyResponse(BaseModel):
     report_data: dict = Field(default_factory=dict)
 
 
+class ReportSubmission(BaseModel):
+    """Payload for submitting a report from Databricks."""
+
+    report_data: dict
+
+
 @app.post(
     "/api/anomaly",
     response_model=AnomalyResponse,
@@ -132,6 +141,31 @@ async def run_anomaly(request: AnomalyRequest = AnomalyRequest()) -> AnomalyResp
         report_text=result.get("report_text", ""),
         report_data=result.get("report_data", {}) or {},
     )
+
+
+@app.post(
+    "/api/report",
+    summary="Submit anomaly report",
+    description="Updates the latest anomaly report in memory (use this from Databricks).",
+)
+async def submit_report(request: ReportSubmission):
+    """Save the report into memory for the dashboard and gatekeeper."""
+    global _LATEST_REPORT
+    _LATEST_REPORT = request.report_data
+    logger.info("Report submitted and cached in memory.")
+    return {"success": True, "message": "Report updated"}
+
+
+@app.get(
+    "/api/gatekeeper",
+    summary="Pipeline Gatekeeper",
+    description="Returns the latest report only if anomalies exist. Used to pause Databricks pipelines.",
+)
+async def gatekeeper():
+    """Gatekeeper logic: return report if total_anomalies > 0, else empty."""
+    if _LATEST_REPORT and _LATEST_REPORT.get("total_anomalies", 0) > 0:
+        return _LATEST_REPORT
+    return {}
 
 
 @app.post(
@@ -286,7 +320,10 @@ async def get_latest_anomaly():
 
 @app.get("/api/latest_anomaly_json")
 async def get_latest_anomaly_json():
-    """Serve the most recent anomalies.json file."""
+    """Serve the most recent anomalies.json file (check memory first)."""
+    if _LATEST_REPORT:
+        return _LATEST_REPORT
+
     file_path = _get_latest_file(OUTPUT_DIR / "Anomaly", "anomalies.json")
     if not file_path:
         raise HTTPException(status_code=404, detail="No anomaly payload found")
