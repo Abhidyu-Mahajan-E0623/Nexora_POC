@@ -14,7 +14,7 @@ from datetime import datetime
 # Update this path to where your anomalies.json is stored (e.g., /dbfs/mnt/...)
 RENDER_API_URL = "https://your-app.onrender.com"
 DASHBOARD_URL = "https://your-app.onrender.com/"
-API_KEY = "Abhidyumadethiscode-SECURE-2026"
+NEXORA_API_TOKEN = "abhidyu_made_this_code_by_himself_nexora_secure_2026"
 SENDGRID_API_KEY = "YOUR_SENDGRID_API_KEY"
 SENDER_EMAIL = "aakash.lal@procdna.com"
 RECIPIENTS = ["naincy.saxena@procdna.com", "vaibhav.maheshwari@procdna.com", "aakash.lal@procdna.com"]
@@ -74,7 +74,7 @@ def send_data_quality_alert(run_id, total_anomalies, environment="Production"):
 # After running your anomaly detection scan in Task 1, use this to upload the report to Render:
 def upload_report_to_render(report_dict):
     try:
-        headers = {"X-API-Key": API_KEY}
+        headers = {"X-API-Key": NEXORA_API_TOKEN}
         resp = requests.post(f"{RENDER_API_URL}/api/report", 
                              json={"report_data": report_dict},
                              headers=headers)

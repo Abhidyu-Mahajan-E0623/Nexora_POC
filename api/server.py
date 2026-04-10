@@ -155,7 +155,7 @@ async def submit_report(
 ):
     """Save the report into memory for the dashboard and gatekeeper."""
     settings = load_settings_or_raise()
-    if x_api_key != settings.API_KEY:
+    if x_api_key != settings.NEXORA_API_TOKEN:
         logger.warning("Unauthenticated report submission attempt.")
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
