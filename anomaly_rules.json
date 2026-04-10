@@ -1,0 +1,92 @@
+[
+  {
+    "detector": "crm_account_onboarding_volume",
+    "display_name": "CRM | Account Onboarding Volume",
+    "table_candidates": ["account"],
+    "date_column_candidates": ["createddate", "lastmodifieddate", "systemmodstamp"],
+    "metric_expr": "COUNT(*)",
+    "metric_label": "New Accounts",
+    "business_summary": "Tracks the weekly number of new CRM accounts created.",
+    "where_clause": "COALESCE(TRY_CAST(`isdeleted` AS BOOLEAN), FALSE) = FALSE",
+    "filter_note": "Deleted CRM accounts are excluded.",
+    "rescued_column_candidates": ["_rescued_data", "_rescued_data_json", "rescued_data"],
+    "granularities": ["week"],
+    "lookback_windows": {
+      "week": 26
+    },
+    "schema_monitoring": true,
+    "enabled": true
+  },
+  {
+    "detector": "crm_event_attendance_fill_rate",
+    "display_name": "CRM | Event Attendance Fill Rate",
+    "table_candidates": ["em_event_vod__c"],
+    "date_column_candidates": ["start_time_vod__c", "end_time_vod__c", "createddate"],
+    "metric_expr": "100.0 * SUM(CASE WHEN TRY_CAST(`estimated_attendance_vod__c` AS DOUBLE) > 0 THEN COALESCE(TRY_CAST(`actual_attendance_vod__c` AS DOUBLE), 0.0) ELSE 0.0 END) / NULLIF(SUM(CASE WHEN TRY_CAST(`estimated_attendance_vod__c` AS DOUBLE) > 0 THEN TRY_CAST(`estimated_attendance_vod__c` AS DOUBLE) ELSE 0.0 END), 0.0)",
+    "metric_label": "Attendance Fill Rate (%)",
+    "business_summary": "Tracks how full CRM events were compared with the expected attendee count.",
+    "where_clause": "TO_DATE(`start_time_vod__c`) <= CURRENT_DATE() AND COALESCE(TRY_CAST(`isdeleted` AS BOOLEAN), FALSE) = FALSE AND COALESCE(`status_vod__c`, '') IN ('Closed_vod', 'Completed')",
+    "filter_note": "Only closed or completed events up to today are included.",
+    "rescued_column_candidates": ["_rescued_data", "_rescued_data_json", "rescued_data"],
+    "granularities": ["month"],
+    "lookback_windows": {
+      "month": 12
+    },
+    "schema_monitoring": true,
+    "enabled": true
+  },
+  {
+    "detector": "crm_urgent_suggestion_share",
+    "display_name": "CRM | Urgent Suggestion Share",
+    "table_candidates": ["suggestion_vod__c"],
+    "date_column_candidates": ["posted_date_vod__c", "createddate"],
+    "metric_expr": "100.0 * AVG(CASE WHEN `priority_vod__c` = 'Urgent_vod' THEN 1.0 ELSE 0.0 END)",
+    "metric_label": "Urgent Suggestion Share (%)",
+    "business_summary": "Tracks the weekly share of suggestions marked as urgent.",
+    "where_clause": "COALESCE(TRY_CAST(`isdeleted` AS BOOLEAN), FALSE) = FALSE",
+    "filter_note": "Deleted suggestions are excluded.",
+    "rescued_column_candidates": ["_rescued_data", "_rescued_data_json", "rescued_data"],
+    "granularities": ["week"],
+    "lookback_windows": {
+      "week": 26
+    },
+    "schema_monitoring": true,
+    "enabled": true
+  },
+  {
+    "detector": "sales_execution_feedback_volume",
+    "display_name": "Sales | Execution Feedback Volume",
+    "table_candidates": ["suggestion_feedback_vod__c"],
+    "date_column_candidates": ["createddate", "lastmodifieddate", "systemmodstamp"],
+    "metric_expr": "COUNT(*)",
+    "metric_label": "Execution Feedback Records",
+    "business_summary": "Tracks the weekly number of sales execution feedback records entered by reps.",
+    "where_clause": "COALESCE(TRY_CAST(`isdeleted` AS BOOLEAN), FALSE) = FALSE",
+    "filter_note": "Deleted feedback records are excluded.",
+    "rescued_column_candidates": ["_rescued_data", "_rescued_data_json", "rescued_data"],
+    "granularities": ["week"],
+    "lookback_windows": {
+      "week": 26
+    },
+    "schema_monitoring": true,
+    "enabled": true
+  },
+  {
+    "detector": "sales_field_force_time_off_volume",
+    "display_name": "Sales | Field Force Time Off Volume",
+    "table_candidates": ["time_off_territory_vod__c"],
+    "date_column_candidates": ["date_vod__c", "createddate"],
+    "metric_expr": "COUNT(*)",
+    "metric_label": "Time Off Entries",
+    "business_summary": "Tracks the weekly number of approved field force time-off entries.",
+    "where_clause": "`date_vod__c` <= CURRENT_DATE() AND COALESCE(TRY_CAST(`isdeleted` AS BOOLEAN), FALSE) = FALSE AND `status_vod__c` = 'Approved'",
+    "filter_note": "Only approved time-off entries up to today are included.",
+    "rescued_column_candidates": ["_rescued_data", "_rescued_data_json", "rescued_data"],
+    "granularities": ["week"],
+    "lookback_windows": {
+      "week": 26
+    },
+    "schema_monitoring": true,
+    "enabled": true
+  }
+]

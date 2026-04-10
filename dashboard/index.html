@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexora — AI Data Intelligence Platform</title>
+    <meta name="description" content="AI-Powered Data Intelligence Platform — monitor, embed intelligence, and enable action across your data ecosystem.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="bg-mesh">
+        <div class="mesh-orb mesh-1"></div>
+        <div class="mesh-orb mesh-2"></div>
+        <div class="mesh-orb mesh-3"></div>
+    </div>
+
+    <!-- ===== HEADER ===== -->
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="header-brand" onclick="app.navigate('home')">
+                <img src="logo.png" alt="ProcDNA" class="brand-logo">
+                <h1 id="header-title" class="brand-name">Nexora</h1>
+            </div>
+            <div class="header-actions">
+                <nav id="header-nav" style="display:none;">
+                    <button class="nav-home-btn" onclick="app.goHome()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        Back to Home
+                    </button>
+                </nav>
+                <button class="header-icon-btn" id="notification-btn" title="Notifications">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span class="notif-badge">3</span>
+                </button>
+                <div class="header-avatar" title="User Profile">A</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== SIDEBAR - visible on inner pages ===== -->
+    <aside id="app-sidebar" class="app-sidebar" style="display:none;">
+        <div class="sidebar-section-label">Modules</div>
+        <nav class="sidebar-nav">
+            <a class="sidebar-item active" id="sidebar-data-obs" onclick="app.navigate('data-observation')">
+                <div class="sidebar-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                </div>
+                <span>Data Observability</span>
+            </a>
+            <a class="sidebar-item disabled" onclick="app.comingSoon('Trends &amp; Insights')">
+                <div class="sidebar-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                </div>
+                <span>Trends &amp; Insights</span>
+                <span class="sidebar-badge-soon">Soon</span>
+            </a>
+            <a class="sidebar-item disabled" onclick="app.comingSoon('Operations &amp; Consumption')">
+                <div class="sidebar-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </div>
+                <span>Operations &amp; Consumption</span>
+                <span class="sidebar-badge-soon">Soon</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-area" id="main-area">
+
+        <!-- ===== HOME / LANDING PAGE ===== -->
+        <section id="view-home" class="view visible" style="display:block;opacity:1;transform:none;">
+            <div class="home-hero">
+                <h2>AI&#8209;Powered Data Intelligence Platform</h2>
+                <p>
+                    A single unified system that monitors your data ecosystem,
+                    embeds intelligence and enables action.
+                </p>
+            </div>
+            <div class="module-grid home-grid">
+                <!-- Data Observability - Active -->
+                <div class="module-card mc-data-obs" onclick="app.navigate('data-observation')">
+                    <div class="mc-glow"></div>
+                    <div class="mc-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                    </div>
+                    <h3>Data Observability</h3>
+                    <p>Tools to monitor data pipelines, data quality, structure, and metadata across the enterprise data ecosystem.</p>
+                    <div class="mc-foot"><span>Active Module</span></div>
+                </div>
+
+                <!-- Trends & Insights - Disabled -->
+                <div class="module-card mc-trends mc-disabled">
+                    <div class="mc-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                    </div>
+                    <h3>Trends &amp; Insights</h3>
+                    <p>Tools to analyze data movement, anomalies over time, and generate insight narratives from observed patterns.</p>
+                    <div class="mc-foot"><span>Coming Soon</span></div>
+                </div>
+
+                <!-- Operations & Consumption - Disabled -->
+                <div class="module-card mc-operations mc-disabled">
+                    <div class="mc-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                    </div>
+                    <h3>Operations &amp; Consumption</h3>
+                    <p>Tools for embedding intelligence into operational workflows and downstream consumption layers.</p>
+                    <div class="mc-foot"><span>Coming Soon</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== DATA OBSERVATION PAGE ===== -->
+        <section id="view-data-observation" class="view" style="display:none;">
+            <div class="do-page-header">
+                <h2 class="do-page-title">Data Observability</h2>
+                <p class="do-page-desc">Tools to monitor data pipelines, data quality, structure, and metadata across the enterprise data ecosystem.</p>
+            </div>
+            <div class="module-grid do-grid">
+                <!-- Smart Monitoring - Disabled -->
+                <div class="module-card mc-smart mc-disabled">
+                    <div class="mc-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                    </div>
+                    <h3>Smart Monitoring</h3>
+                    <p>Real&#8209;time monitoring of data pipelines, ingestion jobs, and execution status.</p>
+                    <div class="mc-foot"><span>Coming Soon</span></div>
+                </div>
+
+                <!-- Anomaly Detection - Active -->
+                <div class="module-card mc-anomaly" onclick="app.loadAnomaly()">
+                    <div class="mc-glow"></div>
+                    <div class="mc-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                        </svg>
+                    </div>
+                    <h3>Anomaly Detection</h3>
+                    <p>Detection of data and schema anomalies with visibility into impacted pipelines and downstream datasets.</p>
+                    <div class="mc-foot"><span>Active Pipeline</span></div>
+                </div>
+
+                <!-- Standard DQM - Disabled -->
+                <div class="module-card mc-dqm mc-disabled">
+                    <div class="mc-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                    </div>
+                    <h3>Standard DQM</h3>
+                    <p>Automated data validations applied across standardized datasets.</p>
+                    <div class="mc-foot"><span>Coming Soon</span></div>
+                </div>
+
+                <!-- AI Metadata Tagging - Disabled -->
+                <div class="module-card mc-metadata mc-disabled">
+                    <div class="mc-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
+                        </svg>
+                    </div>
+                    <h3>AI Metadata Tagging</h3>
+                    <p>Automated classification and tagging of datasets based on type and domain.</p>
+                    <div class="mc-foot"><span>Coming Soon</span></div>
+                </div>
+
+                <!-- Data Lineage - Disabled -->
+                <div class="module-card mc-lineage mc-disabled">
+                    <div class="mc-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                    </div>
+                    <h3>Data Lineage</h3>
+                    <p>End&#8209;to&#8209;end dataset lineage showing how data moves across multiple tables.</p>
+                    <div class="mc-foot"><span>Coming Soon</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== LOADING ===== -->
+        <section id="view-loading" class="view" style="display:none;">
+            <div class="loader-wrap">
+                <div class="orbit-spinner">
+                    <div class="orbit-ring"></div>
+                    <div class="orbit-dot"></div>
+                </div>
+                <h3 id="loading-title">Running Monitor...</h3>
+                <p id="loading-subtitle">Connecting to Databricks cluster.</p>
+                <div class="step-log" id="step-log"></div>
+            </div>
+        </section>
+
+        <!-- ===== ANOMALY RESULTS ===== -->
+        <section id="view-anomaly" class="view" style="display:none;">
+            <div class="section-title-bar">
+                <h2>Anomaly Monitoring Results</h2>
+                <p class="helper-text">Data anomalies cover metric outliers. Schema anomalies cover added or removed columns, rescue payload fields, and type drift.</p>
+            </div>
+            <div class="period-selector-bar">
+                <label>Category</label>
+                <select id="filter-category" onchange="app.state.filterCategory=this.value;app.applyFilters();">
+                    <option value="all">All</option>
+                    <option value="data">Data</option>
+                    <option value="schema">Schema</option>
+                </select>
+
+                <label>Table</label>
+                <select id="filter-table" onchange="app.state.filterTable=this.value;app.applyFilters();">
+                    <option value="all">All Tables</option>
+                </select>
+
+                <label>Period</label>
+                <select id="period-select" onchange="app.state.filterPeriod=this.value;app.applyFilters();">
+                    <option value="all">All Periods</option>
+                </select>
+            </div>
+            <div class="stat-strip">
+                <div class="stat-box"><span class="stat-val" id="tables-with-issues">0</span><span class="stat-lbl">Total Tables With Issues</span></div>
+                <div class="stat-box stat-warn"><span class="stat-val" id="data-issues">0</span><span class="stat-lbl">Data Issues</span></div>
+                <div class="stat-box"><span class="stat-val" id="schema-issues">0</span><span class="stat-lbl">Schema Issues</span></div>
+                <div class="stat-box stat-ok"><span class="stat-val" id="tables-accepted">0</span><span class="stat-lbl">Tables Accepted</span></div>
+            </div>
+            <div id="tables-container"></div>
+        </section>
+
+    </main>
+
+    <!-- ===== ACCEPT OVERLAY ===== -->
+    <div id="accept-overlay" class="accept-overlay" style="display:none;" onclick="app.closeAcceptOverlay()">
+        <div class="accept-tile" onclick="event.stopPropagation()">
+            <div class="accept-icon-ring">
+                <svg class="accept-checkmark" viewBox="0 0 52 52" width="60" height="60">
+                    <circle class="check-circle" cx="26" cy="26" r="25" fill="none" stroke="#10b981" stroke-width="2"></circle>
+                    <path class="check-path" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M14 27l7 7 16-16"></path>
+                </svg>
+            </div>
+            <h3 class="accept-title">Table Accepted</h3>
+            <p id="accept-overlay-msg" class="accept-msg">The selected table has been accepted.</p>
+            <div class="accept-sparkles">
+                <span class="sparkle s1">*</span>
+                <span class="sparkle s2">*</span>
+                <span class="sparkle s3">*</span>
+                <span class="sparkle s4">*</span>
+                <span class="sparkle s5">*</span>
+                <span class="sparkle s6">*</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div id="toast" class="toast"><div class="toast-icon">OK</div><span id="toast-msg">Done</span></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

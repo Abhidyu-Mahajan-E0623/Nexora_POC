@@ -1,0 +1,27 @@
+{
+  "account": {
+    "min_val": 91.0,
+    "max_val": 115124.0,
+    "accepted_at": "2026-04-09T08:34:22Z"
+  },
+  "em_event_vod__c": {
+    "min_val": 59.30232558139535,
+    "max_val": 102.58064516129032,
+    "accepted_at": "2026-04-09T10:56:44Z"
+  },
+  "suggestion_vod__c": {
+    "min_val": 0.0,
+    "max_val": 95.296,
+    "accepted_at": "2026-04-10T06:40:38Z"
+  },
+  "suggestion_feedback_vod__c": {
+    "min_val": 64.0,
+    "max_val": 421.0,
+    "accepted_at": "2026-04-10T06:40:43Z"
+  },
+  "time_off_territory_vod__c": {
+    "min_val": 1.0,
+    "max_val": 558.0,
+    "accepted_at": "2026-04-10T06:40:46Z"
+  }
+}
