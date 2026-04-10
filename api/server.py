@@ -190,6 +190,39 @@ async def submit_data_report(
     return {"success": True, "message": "Data report updated"}
 
 
+@app.post(
+    "/api/report",
+    summary="Submit anomaly report (Legacy)",
+    description="Updates both schema and data reports (if fields present) or defaults to data. For backward compatibility.",
+)
+async def submit_report(
+    request: ReportSubmission,
+    x_api_key: str = Header(None, alias="X-API-Key")
+):
+    """Save the report into memory (Legacy endpoint)."""
+    settings = load_settings_or_raise()
+    if x_api_key != settings.NEXORA_API_TOKEN:
+        logger.warning("Unauthenticated report submission attempt.")
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+
+    global _LATEST_SCHEMA_REPORT, _LATEST_DATA_REPORT, _LAST_UPDATED_TYPE
+    # If the report has both or is generic, we can store it in both OR determine based on keys
+    if "schema_anomalies" in request.report_data and "data_anomalies" not in request.report_data:
+        _LATEST_SCHEMA_REPORT = request.report_data
+        _LAST_UPDATED_TYPE = "schema"
+    elif "data_anomalies" in request.report_data and "schema_anomalies" not in request.report_data:
+        _LATEST_DATA_REPORT = request.report_data
+        _LAST_UPDATED_TYPE = "data"
+    else:
+        # Generic update - update both if it's a full report
+        _LATEST_SCHEMA_REPORT = request.report_data
+        _LATEST_DATA_REPORT = request.report_data
+        _LAST_UPDATED_TYPE = "data"
+    
+    logger.info("Report submitted to legacy endpoint.")
+    return {"success": True, "message": "Report updated"}
+
+
 @app.get(
     "/api/gatekeeper/schema",
     summary="Schema Gatekeeper",
@@ -212,6 +245,32 @@ async def gatekeeper_data():
     if _LATEST_DATA_REPORT and _LATEST_DATA_REPORT.get("data_anomalies", 0) > 0:
         return _LATEST_DATA_REPORT
     return {}
+
+
+@app.get(
+    "/api/gatekeeper",
+    summary="General Gatekeeper (Legacy)",
+    description="Returns the latest report (schema or data) if any anomalies exist.",
+)
+async def gatekeeper():
+    """Returns any report that has anomalies."""
+    if _LATEST_SCHEMA_REPORT and _LATEST_SCHEMA_REPORT.get("schema_anomalies", 0) > 0:
+        return _LATEST_SCHEMA_REPORT
+    if _LATEST_DATA_REPORT and _LATEST_DATA_REPORT.get("data_anomalies", 0) > 0:
+        return _LATEST_DATA_REPORT
+    return {}
+
+
+@app.get("/api/validate-schema", summary="Alias for Schema Gatekeeper")
+async def validate_schema():
+    """Alias for gatekeeper_schema."""
+    return await gatekeeper_schema()
+
+
+@app.get("/api/validate-data", summary="Alias for Data Gatekeeper")
+async def validate_data():
+    """Alias for gatekeeper_data."""
+    return await gatekeeper_data()
 
 
 @app.post(
