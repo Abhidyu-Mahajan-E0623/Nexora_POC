@@ -22,8 +22,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DASHBOARD_DIR = PROJECT_ROOT / "dashboard"
 OUTPUT_DIR = PROJECT_ROOT / "Output"
 
-# In-memory store for the latest anomaly report (essential for Render free tier)
-_LATEST_REPORT: dict | None = None
+# In-memory stores for the latest anomaly reports (essential for Render free tier)
+_LATEST_SCHEMA_REPORT: dict | None = None
+_LATEST_DATA_REPORT: dict | None = None
+_LAST_UPDATED_TYPE: str | None = None
 
 
 @asynccontextmanager
@@ -145,35 +147,70 @@ async def run_anomaly(request: AnomalyRequest = AnomalyRequest()) -> AnomalyResp
 
 
 @app.post(
-    "/api/report",
-    summary="Submit anomaly report",
-    description="Updates the latest anomaly report in memory (use this from Databricks).",
+    "/api/report/schema",
+    summary="Submit schema anomaly report",
+    description="Updates the latest schema anomaly report in memory (use this from Databricks).",
 )
-async def submit_report(
+async def submit_schema_report(
     request: ReportSubmission,
     x_api_key: str = Header(None, alias="X-API-Key")
 ):
-    """Save the report into memory for the dashboard and gatekeeper."""
+    """Save the schema report into memory."""
     settings = load_settings_or_raise()
     if x_api_key != settings.NEXORA_API_TOKEN:
-        logger.warning("Unauthenticated report submission attempt.")
+        logger.warning("Unauthenticated schema report submission attempt.")
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
-    global _LATEST_REPORT
-    _LATEST_REPORT = request.report_data
-    logger.info("Report submitted and cached in memory.")
-    return {"success": True, "message": "Report updated"}
+    global _LATEST_SCHEMA_REPORT, _LAST_UPDATED_TYPE
+    _LATEST_SCHEMA_REPORT = request.report_data
+    _LAST_UPDATED_TYPE = "schema"
+    logger.info("Schema report submitted and cached in memory.")
+    return {"success": True, "message": "Schema report updated"}
+
+
+@app.post(
+    "/api/report/data",
+    summary="Submit data anomaly report",
+    description="Updates the latest data anomaly report in memory (use this from Databricks).",
+)
+async def submit_data_report(
+    request: ReportSubmission,
+    x_api_key: str = Header(None, alias="X-API-Key")
+):
+    """Save the data report into memory."""
+    settings = load_settings_or_raise()
+    if x_api_key != settings.NEXORA_API_TOKEN:
+        logger.warning("Unauthenticated data report submission attempt.")
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+
+    global _LATEST_DATA_REPORT, _LAST_UPDATED_TYPE
+    _LATEST_DATA_REPORT = request.report_data
+    _LAST_UPDATED_TYPE = "data"
+    logger.info("Data report submitted and cached in memory.")
+    return {"success": True, "message": "Data report updated"}
 
 
 @app.get(
-    "/api/gatekeeper",
-    summary="Pipeline Gatekeeper",
-    description="Returns the latest report only if anomalies exist. Used to pause Databricks pipelines.",
+    "/api/gatekeeper/schema",
+    summary="Schema Gatekeeper",
+    description="Returns the latest schema report only if schema anomalies exist. Used to pause Databricks pipelines.",
 )
-async def gatekeeper():
-    """Gatekeeper logic: return report if total_anomalies > 0, else empty."""
-    if _LATEST_REPORT and _LATEST_REPORT.get("total_anomalies", 0) > 0:
-        return _LATEST_REPORT
+async def gatekeeper_schema():
+    """Gatekeeper logic: return report if schema_anomalies > 0, else empty."""
+    if _LATEST_SCHEMA_REPORT and _LATEST_SCHEMA_REPORT.get("schema_anomalies", 0) > 0:
+        return _LATEST_SCHEMA_REPORT
+    return {}
+
+
+@app.get(
+    "/api/gatekeeper/data",
+    summary="Data Gatekeeper",
+    description="Returns the latest data report only if data anomalies exist. Used to pause Databricks pipelines.",
+)
+async def gatekeeper_data():
+    """Gatekeeper logic: return report if data_anomalies > 0, else empty."""
+    if _LATEST_DATA_REPORT and _LATEST_DATA_REPORT.get("data_anomalies", 0) > 0:
+        return _LATEST_DATA_REPORT
     return {}
 
 
@@ -329,9 +366,11 @@ async def get_latest_anomaly():
 
 @app.get("/api/latest_anomaly_json")
 async def get_latest_anomaly_json():
-    """Serve the most recent anomalies.json file (check memory first)."""
-    if _LATEST_REPORT:
-        return _LATEST_REPORT
+    """Serve the most recently updated anomaly report from memory."""
+    if _LAST_UPDATED_TYPE == "schema" and _LATEST_SCHEMA_REPORT:
+        return _LATEST_SCHEMA_REPORT
+    if _LAST_UPDATED_TYPE == "data" and _LATEST_DATA_REPORT:
+        return _LATEST_DATA_REPORT
 
     file_path = _get_latest_file(OUTPUT_DIR / "Anomaly", "anomalies.json")
     if not file_path:
