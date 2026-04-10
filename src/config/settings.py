@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     DEFAULT_TOP_K: int = 10
     OUTPUT_TIMEZONE: str = "UTC"
     ANOMALY_RESCUED_ROW_LIMIT: int = 500
+    ENVIRONMENT: str = "Production"
+
+    # Security
+    API_KEY: str = "nexora-default-token-123"
 
     APP_NAME: str = "schema-maker"
     APP_VERSION: str = "0.2.0"

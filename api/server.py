@@ -8,12 +8,13 @@ import json
 import logging
 import time
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Header
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from api.graphs import anomaly_graph
+from src.config.settings import load_settings_or_raise
 
 logger = logging.getLogger("schema_maker.server")
 
@@ -148,8 +149,16 @@ async def run_anomaly(request: AnomalyRequest = AnomalyRequest()) -> AnomalyResp
     summary="Submit anomaly report",
     description="Updates the latest anomaly report in memory (use this from Databricks).",
 )
-async def submit_report(request: ReportSubmission):
+async def submit_report(
+    request: ReportSubmission,
+    x_api_key: str = Header(None, alias="X-API-Key")
+):
     """Save the report into memory for the dashboard and gatekeeper."""
+    settings = load_settings_or_raise()
+    if x_api_key != settings.API_KEY:
+        logger.warning("Unauthenticated report submission attempt.")
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+
     global _LATEST_REPORT
     _LATEST_REPORT = request.report_data
     logger.info("Report submitted and cached in memory.")

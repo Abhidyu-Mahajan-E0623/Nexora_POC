@@ -11,16 +11,14 @@ from datetime import datetime
 # =========================================================================
 # 1. CONFIGURATION
 # =========================================================================
-# The URL of your FastAPI server hosted on Render
+# Update this path to where your anomalies.json is stored (e.g., /dbfs/mnt/...)
 RENDER_API_URL = "https://your-app.onrender.com"
-
-# SendGrid Configuration (for the alert email)
+DASHBOARD_URL = "https://your-app.onrender.com/"
+API_KEY = "nexora-default-token-123"
 SENDGRID_API_KEY = "YOUR_SENDGRID_API_KEY"
 SENDER_EMAIL = "aakash.lal@procdna.com"
 RECIPIENTS = ["naincy.saxena@procdna.com", "vaibhav.maheshwari@procdna.com", "aakash.lal@procdna.com"]
 
-# Dashboard URL for the "Open Dashboard" button
-DASHBOARD_URL = "https://your-app.onrender.com/"
 
 # =========================================================================
 # 2. HELPER: SEND EMAIL ALERT
@@ -76,11 +74,14 @@ def send_data_quality_alert(run_id, total_anomalies, environment="Production"):
 # After running your anomaly detection scan in Task 1, use this to upload the report to Render:
 def upload_report_to_render(report_dict):
     try:
-        resp = requests.post(f"{RENDER_API_URL}/api/report", json={"report_data": report_dict})
+        headers = {"X-API-Key": API_KEY}
+        resp = requests.post(f"{RENDER_API_URL}/api/report", 
+                             json={"report_data": report_dict},
+                             headers=headers)
         if resp.status_code == 200:
             print("Successfully uploaded report to Render.")
         else:
-            print(f"Failed to upload report: {resp.text}")
+            print(f"Failed to upload report (Code {resp.status_code}): {resp.text}")
     except Exception as e:
         print(f"Error connecting to Render: {e}")
 
