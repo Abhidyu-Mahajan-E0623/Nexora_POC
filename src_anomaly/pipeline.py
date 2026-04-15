@@ -603,7 +603,10 @@ def _run_schema_detector(
     else:
         notes.append("No rescue column found, so rescue-based schema checks were skipped.")
 
-    _save_schema_snapshot(snapshot_file, catalog=catalog, schema=schema, table_name=table_name, current_schema=current_schema)
+    # Only overwrite the baseline snapshot if there are no anomalies, 
+    # so schema drifts persist across pipeline runs until accepted by the user.
+    if not previous_schema or not schema_findings:
+        _save_schema_snapshot(snapshot_file, catalog=catalog, schema=schema, table_name=table_name, current_schema=current_schema)
 
     return DetectorResult(
         category="schema",
