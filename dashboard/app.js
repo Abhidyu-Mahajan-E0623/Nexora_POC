@@ -112,6 +112,7 @@ var app = {
         var controller = new AbortController();
         self.state.abortController = controller;
 
+        // Fire the pipeline (returns immediately)
         fetch("/api/anomaly", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -119,30 +120,52 @@ var app = {
             signal: controller.signal
         })
         .then(function(res) {
-            clearInterval(timer);
-            for (var j = 0; j < stepEls.length; j++) {
-                stepEls[j].classList.remove("active");
-                stepEls[j].classList.add("done");
-            }
             if (!res.ok) throw new Error("Pipeline returned HTTP " + res.status);
             return res.json();
         })
-        .then(function(payload) {
-            self.state.abortController = null;
-            self.state.resolvedDetectors = {};
-            self.state.anomalyData = payload.report_data || self.parsers.anomaly(payload.report_text || "");
-            // Load accepted state from server before rendering
-            return fetch("/api/accepted_state")
-                .then(function(res) { return res.ok ? res.json() : {}; })
+        .then(function() {
+            // Poll /api/anomaly/status until done
+            var pollInterval = setInterval(function() {
+                if (controller.signal.aborted) {
+                    clearInterval(pollInterval);
+                    return;
+                }
+                fetch("/api/anomaly/status", { signal: controller.signal })
+                .then(function(res) { return res.json(); })
                 .then(function(data) {
-                    self.state.acceptedTables = (data && data.accepted_tables) || {};
-                    self.state.acceptedSchemas = (data && data.accepted_schemas) || {};
+                    if (data.status === "done") {
+                        clearInterval(pollInterval);
+                        clearInterval(timer);
+                        for (var j = 0; j < stepEls.length; j++) {
+                            stepEls[j].classList.remove("active");
+                            stepEls[j].classList.add("done");
+                        }
+                        self.state.abortController = null;
+                        self.state.resolvedDetectors = {};
+                        self.state.anomalyData = data.report_data || self.parsers.anomaly(data.report_text || "");
+                        // Load accepted state from server before rendering
+                        fetch("/api/accepted_state")
+                            .then(function(res) { return res.ok ? res.json() : {}; })
+                            .then(function(acc) {
+                                self.state.acceptedTables = (acc && acc.accepted_tables) || {};
+                                self.state.acceptedSchemas = (acc && acc.accepted_schemas) || {};
+                            })
+                            .catch(function() { /* proceed with empty state */ })
+                            .then(function() {
+                                self.renderers.anomaly(self.state.anomalyData);
+                                self.navigate("anomaly");
+                            });
+                    } else if (data.status === "error") {
+                        clearInterval(pollInterval);
+                        clearInterval(timer);
+                        self.state.abortController = null;
+                        alert("Pipeline error: " + (data.error || "Unknown error"));
+                        self.navigate("home");
+                    }
+                    // else status === "running" → keep polling
                 })
-                .catch(function() { /* proceed with empty state */ })
-                .then(function() {
-                    self.renderers.anomaly(self.state.anomalyData);
-                    self.navigate("anomaly");
-                });
+                .catch(function() { /* ignore transient fetch errors during polling */ });
+            }, 3000);
         })
         .catch(function(err) {
             clearInterval(timer);

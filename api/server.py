@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 import json
@@ -26,6 +27,11 @@ OUTPUT_DIR = PROJECT_ROOT / "Output"
 _LATEST_SCHEMA_REPORT: dict | None = None
 _LATEST_DATA_REPORT: dict | None = None
 _LAST_UPDATED_TYPE: str | None = None
+
+# Background pipeline execution state
+_PIPELINE_STATUS: str = "idle"  # "idle" | "running" | "done" | "error"
+_PIPELINE_RESULT: dict | None = None
+_PIPELINE_ERROR: str | None = None
 
 
 @asynccontextmanager
@@ -123,27 +129,66 @@ class ReportSubmission(BaseModel):
     report_data: dict
 
 
+def _run_pipeline_background(schema_name: str) -> None:
+    """Execute the anomaly pipeline in a background thread."""
+    global _PIPELINE_STATUS, _PIPELINE_RESULT, _PIPELINE_ERROR
+    try:
+        result = anomaly_graph.invoke({"schema": schema_name})
+        if result.get("error"):
+            _PIPELINE_STATUS = "error"
+            _PIPELINE_ERROR = result["error"]
+        else:
+            _PIPELINE_RESULT = {
+                "run_id": result.get("run_id", ""),
+                "total_anomalies": result.get("total_anomalies", 0),
+                "data_anomalies": result.get("data_anomalies", 0),
+                "schema_anomalies": result.get("schema_anomalies", 0),
+                "checks_run": result.get("checks_run", 0),
+                "checks_with_issues": result.get("checks_with_issues", 0),
+                "report_text": result.get("report_text", ""),
+                "report_data": result.get("report_data", {}) or {},
+            }
+            _PIPELINE_STATUS = "done"
+    except Exception as exc:
+        logger.exception("Background pipeline failed: %s", exc)
+        _PIPELINE_STATUS = "error"
+        _PIPELINE_ERROR = str(exc)
+
+
 @app.post(
     "/api/anomaly",
-    response_model=AnomalyResponse,
     summary="Run anomaly detection",
-    description="Runs data anomaly and schema drift monitoring on the specified schema.",
+    description="Starts anomaly detection in the background. Poll /api/anomaly/status for results.",
 )
-async def run_anomaly(request: AnomalyRequest = AnomalyRequest()) -> AnomalyResponse:
-    """Run anomaly detection and return both text and structured output."""
-    result = anomaly_graph.invoke({"schema": request.schema_name})
-    if result.get("error"):
-        raise HTTPException(status_code=500, detail=result["error"])
-    return AnomalyResponse(
-        run_id=result.get("run_id", ""),
-        total_anomalies=result.get("total_anomalies", 0),
-        data_anomalies=result.get("data_anomalies", 0),
-        schema_anomalies=result.get("schema_anomalies", 0),
-        checks_run=result.get("checks_run", 0),
-        checks_with_issues=result.get("checks_with_issues", 0),
-        report_text=result.get("report_text", ""),
-        report_data=result.get("report_data", {}) or {},
+async def run_anomaly(request: AnomalyRequest = AnomalyRequest()):
+    """Start anomaly detection in background and return immediately."""
+    global _PIPELINE_STATUS, _PIPELINE_RESULT, _PIPELINE_ERROR
+    if _PIPELINE_STATUS == "running":
+        return {"status": "running", "message": "Pipeline is already running."}
+    _PIPELINE_STATUS = "running"
+    _PIPELINE_RESULT = None
+    _PIPELINE_ERROR = None
+    thread = threading.Thread(
+        target=_run_pipeline_background,
+        args=(request.schema_name,),
+        daemon=True,
     )
+    thread.start()
+    return {"status": "running", "message": "Pipeline started."}
+
+
+@app.get(
+    "/api/anomaly/status",
+    summary="Check pipeline status",
+    description="Returns the current pipeline status and results when done.",
+)
+async def anomaly_status():
+    """Return current pipeline status; include full results when done."""
+    if _PIPELINE_STATUS == "done" and _PIPELINE_RESULT:
+        return {"status": "done", **_PIPELINE_RESULT}
+    if _PIPELINE_STATUS == "error":
+        return {"status": "error", "error": _PIPELINE_ERROR or "Unknown error"}
+    return {"status": _PIPELINE_STATUS}
 
 
 @app.post(
