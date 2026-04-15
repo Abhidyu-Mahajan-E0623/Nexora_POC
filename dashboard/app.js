@@ -1,4 +1,6 @@
 var app = {
+    DEFAULT_SCHEMA: "raw",
+
     TABLE_DESCRIPTIONS: {
         "hco_details": "Monitors healthcare organization data for unexpected changes in clinic tracking.",
         "hcp_details": "Monitors healthcare professional demographics and segment statuses.",
@@ -42,6 +44,7 @@ var app = {
         window.scrollTo({ top: 0, behavior: "smooth" });
 
         this.state.currentView = viewId;
+        this.syncResetHistoryButton();
 
         // Show sidebar and header nav for all inner pages (non-home)
         var isInner = (viewId !== "home");
@@ -116,7 +119,7 @@ var app = {
         fetch("/api/anomaly", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(extraBody || { schema: "bronze" }),
+            body: JSON.stringify(extraBody || { schema: self.DEFAULT_SCHEMA }),
             signal: controller.signal
         })
         .then(function(res) {
@@ -208,6 +211,54 @@ var app = {
         })
         .catch(function(err) {
             console.warn("Could not load accepted state from server:", err.message);
+        });
+    },
+
+    syncResetHistoryButton: function() {
+        var btn = document.getElementById("history-reset-btn");
+        if (!btn) return;
+        var visible = this.state.currentView === "anomaly";
+        btn.classList.toggle("visible", visible);
+        if (!visible) {
+            btn.classList.remove("busy");
+            btn.disabled = false;
+        }
+    },
+
+    resetAcceptedHistory: function(event) {
+        var self = this;
+        var btn = event && event.currentTarget ? event.currentTarget : document.getElementById("history-reset-btn");
+        if (!btn) return;
+
+        var confirmed = window.confirm(
+            "Reset saved anomaly history? This clears accepted thresholds and schema acceptances so hidden issues show again."
+        );
+        if (!confirmed) return;
+
+        btn.disabled = true;
+        btn.classList.add("busy");
+
+        fetch("/api/accepted_state", { method: "DELETE" })
+        .then(function(res) {
+            if (!res.ok) throw new Error("Reset failed");
+            return res.json();
+        })
+        .then(function(data) {
+            self.state.acceptedTables = {};
+            self.state.acceptedSchemas = {};
+            self.state.resolvedDetectors = {};
+            if (self.state.anomalyData) {
+                self.applyFilters();
+            }
+            self.showToast((data && data.message) || "Accepted anomaly history reset.");
+        })
+        .catch(function(err) {
+            console.warn("Reset failed:", err.message);
+            alert("Could not reset accepted history right now.");
+        })
+        .finally(function() {
+            btn.disabled = false;
+            btn.classList.remove("busy");
         });
     },
 
@@ -634,7 +685,7 @@ var app = {
             return;
         }
 
-        msg.innerText = '"' + tableName + '" has been accepted and the local max anomaly threshold has been saved.';
+        msg.innerText = '"' + tableName + '" has been saved to anomaly history. Use Reset History to show it again.';
         overlay.style.display = "flex";
 
         var tile = overlay.querySelector(".accept-tile");

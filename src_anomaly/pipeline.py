@@ -162,7 +162,7 @@ def run_bronze_anomaly_detection(
     settings: Settings,
     run_id: str | None = None,
     catalog: str | None = None,
-    schema: str = "bronze",
+    schema: str = "raw",
     logger: Any | None = None,
 ) -> AnomalyDetectionOutcome:
     """Detect data and schema anomalies and persist both text and JSON reports."""

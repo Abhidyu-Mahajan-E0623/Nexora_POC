@@ -33,7 +33,7 @@ def anomaly_node(state: AnomalyState) -> dict[str, Any]:
     logger.info("[anomaly] Node started", extra={"log_module": "anomaly", "step": "start"})
     try:
         settings = load_settings_or_raise()
-        schema = state.get("schema", settings.DATABRICKS_SCHEMA_DOMAIN or "bronze")
+        schema = state.get("schema", settings.DATABRICKS_SCHEMA_DOMAIN or "raw")
         run_id = new_run_id()
         pipe_logger = configure_logging(run_id=run_id)
 

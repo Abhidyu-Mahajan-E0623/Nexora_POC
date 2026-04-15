@@ -285,6 +285,14 @@ body{font-family:var(--font);background:linear-gradient(150deg,var(--b50)0%,var(
 .toast.show{display:flex;opacity:1;transform:translateX(-50%) translateY(0)}
 .toast-icon{color:var(--grn);font-size:1.1rem}
 
+.history-reset-btn{position:fixed;right:28px;bottom:28px;display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border:none;border-radius:999px;background:rgba(15,23,42,.92);color:var(--wh);box-shadow:var(--sh-lg);cursor:pointer;z-index:120;opacity:0;pointer-events:none;transform:translateY(16px);transition:var(--ease)}
+.history-reset-btn.visible{opacity:1;pointer-events:auto;transform:translateY(0)}
+.history-reset-btn:hover{background:var(--red)}
+.history-reset-btn:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(239,68,68,.18),var(--sh-lg)}
+.history-reset-btn svg{width:18px;height:18px;flex-shrink:0}
+.history-reset-btn-label{font-size:.78rem;font-weight:700;letter-spacing:.01em}
+.history-reset-btn.busy{opacity:.82;pointer-events:none}
+
 /* ===== RESPONSIVE ===== */
 @media(max-width:860px){
     .app-sidebar{display:none!important}
@@ -296,4 +304,6 @@ body{font-family:var(--font);background:linear-gradient(150deg,var(--b50)0%,var(
     .tbl-hdr{flex-direction:column;gap:12px}
     .tbl-main{padding-right:0}
     .tbl-actions{width:100%;justify-content:flex-start}
+    .history-reset-btn{right:18px;bottom:18px;padding:12px}
+    .history-reset-btn-label{display:none}
 }

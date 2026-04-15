@@ -20,7 +20,7 @@ def anomaly_detect(
     schema: Annotated[
         str,
         typer.Option("--schema", help="Source schema to scan for anomalies."),
-    ] = "bronze",
+    ] = "raw",
 ) -> None:
     """Run anomaly detection for the requested schema."""
     settings = load_settings_or_raise()

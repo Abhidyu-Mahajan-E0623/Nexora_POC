@@ -36,6 +36,7 @@ Thumbs.db
 # Loose anomaly reports (root-level, not in Output/)
 Anomaly_2025.txt
 Anomaly_Validation.txt
+table_thresholds.json
 
 # Development plan (not needed in production)
 plan.md

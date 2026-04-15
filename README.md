@@ -14,7 +14,7 @@ The copied project has been trimmed to anomaly monitoring only. The CLI, API, an
 ### Data anomalies
 - Monthly, weekly, and daily outliers using P1/P99 bounds.
 - Training data comes from prior months, so the current month is always compared against earlier history.
-- Manual table-level threshold overrides can still be stored in `table_thresholds.json`.
+- Manual table-level threshold overrides can still be stored in the runtime-generated `table_thresholds.json`.
 
 ### Schema anomalies
 - Added columns.
@@ -34,7 +34,7 @@ DATABRICKS_HOST=
 DATABRICKS_TOKEN=
 DATABRICKS_SQL_WAREHOUSE_ID=
 DATABRICKS_CATALOG=nexora_poc_catalog
-DATABRICKS_SCHEMA_DOMAIN=bronze
+DATABRICKS_SCHEMA_DOMAIN=raw
 DATABRICKS_SCHEMA_MONITORING=monitoring
 ANOMALY_RESCUED_ROW_LIMIT=500
 OUTPUT_TIMEZONE=UTC
@@ -67,7 +67,7 @@ If you change datasets, update `anomaly_rules.json` instead of changing Python l
 
 - The detector now filters on parsed dates, not just raw non-null strings.
 - If a configured date column exists but contains no usable dates, the detector is skipped instead of being reported as "No Issues".
-- Some bronze tables in this demo catalog, such as the `call2_*` and email result tables, currently contain malformed time-only strings in their business date fields, so they are intentionally excluded from the active demo monitors until the source load is corrected.
+- Some source tables in this demo catalog, such as the `call2_*` and email result tables, currently contain malformed time-only strings in their business date fields, so they are intentionally excluded from the active demo monitors until the source load is corrected.
 
 ## Key Output Paths
 
@@ -81,7 +81,7 @@ If you change datasets, update `anomaly_rules.json` instead of changing Python l
 Run anomaly monitoring:
 
 ```bash
-python -m src.cli anomaly-detect --schema bronze
+python -m src.cli anomaly-detect --schema raw
 ```
 
 Show version and active catalog defaults:
@@ -107,10 +107,17 @@ uvicorn api.server:app --host 127.0.0.1 --port 8000 --reload
 Main endpoints:
 - `POST /api/anomaly`
 - `POST /api/accept_thresholds`
+- `GET /api/accepted_state`
+- `DELETE /api/accepted_state`
 - `GET /api/latest_anomaly`
 - `GET /api/latest_anomaly_json`
 
 See `API_ACCESS_GUIDE.md` for the request and response format.
+
+## Acceptance State
+
+- `table_thresholds.json` is now treated as runtime state and ignored by git, so new deployments start with a clean acceptance history.
+- The dashboard includes a bottom-right `Reset History` action that clears saved threshold overrides and accepted schema findings so previously hidden anomalies appear again.
 
 ## Optimization Notes
 

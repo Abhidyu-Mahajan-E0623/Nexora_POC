@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     DATABRICKS_TOKEN: str
     DATABRICKS_SQL_WAREHOUSE_ID: str = Field(min_length=1)
     DATABRICKS_CATALOG: str = "nexora_poc_catalog"
-    DATABRICKS_SCHEMA_DOMAIN: str = "bronze"
+    DATABRICKS_SCHEMA_DOMAIN: str = "raw"
     DATABRICKS_SCHEMA_MONITORING: str = "monitoring"
 
     # Behavior

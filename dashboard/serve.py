@@ -12,7 +12,6 @@ If you delete this file, ALL acceptances are reset.
 
 import http.server
 import json
-import os
 import time
 from pathlib import Path
 
@@ -70,6 +69,13 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self._json_response(404, {"success": False, "message": "Not found"})
 
+    def do_DELETE(self):
+        """Handle reset requests for accepted state."""
+        if self.path == "/api/accepted_state":
+            self._handle_reset_accepted_state()
+            return
+        self._json_response(404, {"success": False, "message": "Not found"})
+
     # ----- GET Accepted State -----
     def _handle_get_accepted_state(self):
         """Read the single thresholds file and return accepted tables & schemas."""
@@ -100,6 +106,15 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
             "accepted_tables": accepted_tables,
             "accepted_schemas": accepted_schemas
         })
+
+    def _handle_reset_accepted_state(self):
+        """Delete saved threshold overrides and schema acceptances."""
+        if THRESHOLDS_FILE.exists():
+            THRESHOLDS_FILE.unlink()
+            message = "Accepted anomaly history reset."
+        else:
+            message = "Accepted anomaly history was already empty."
+        self._json_response(200, {"success": True, "message": message})
 
     # ----- Accept Thresholds -----
     def _handle_accept_thresholds(self, body: dict):

@@ -15,5 +15,7 @@ services:
       - key: DATABRICKS_CATALOG
         sync: false
         default: nexora_poc_catalog
+      - key: DATABRICKS_SCHEMA_DOMAIN
+        value: raw
       - key: PYTHON_VERSION
         value: 3.11.0

@@ -18,7 +18,7 @@ Request body:
 
 ```json
 {
-  "schema": "bronze"
+  "schema": "raw"
 }
 ```
 
@@ -36,7 +36,7 @@ Response shape:
   "report_data": {
     "run_id": "run_20260406T123456Z_abc123",
     "generated_at": "2026-04-06T12:34:56+00:00",
-    "data_source": "catalog.bronze",
+    "data_source": "catalog.raw",
     "checks_run": 10,
     "checks_with_issues": 5,
     "total_anomalies": 18,
@@ -53,7 +53,7 @@ Example call:
 curl -X POST \
   http://127.0.0.1:8000/api/anomaly \
   -H "Content-Type: application/json" \
-  -d "{\"schema\":\"bronze\"}"
+  -d "{\"schema\":\"raw\"}"
 ```
 
 ## Threshold Overrides
@@ -80,6 +80,14 @@ Response:
   "message": "Thresholds updated for snr_fact_snr_sales"
 }
 ```
+
+### `GET /api/accepted_state`
+
+Returns the saved accepted tables and accepted schema columns from `table_thresholds.json`.
+
+### `DELETE /api/accepted_state`
+
+Deletes `table_thresholds.json` so saved threshold overrides and schema acceptances are cleared.
 
 ## Latest Report Endpoints
 

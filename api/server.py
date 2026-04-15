@@ -16,12 +16,14 @@ from pydantic import BaseModel, Field
 
 from api.graphs import anomaly_graph
 from src.config.settings import load_settings_or_raise
+from src.utils.io import atomic_write_json
 
 logger = logging.getLogger("schema_maker.server")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DASHBOARD_DIR = PROJECT_ROOT / "dashboard"
 OUTPUT_DIR = PROJECT_ROOT / "Output"
+THRESHOLDS_FILE = PROJECT_ROOT / "table_thresholds.json"
 
 # In-memory stores for the latest anomaly reports (essential for Render free tier)
 _LATEST_SCHEMA_REPORT: dict | None = None
@@ -65,7 +67,7 @@ class AnomalyRequest(BaseModel):
     """Request body for anomaly detection."""
 
     schema_name: str = Field(
-        default="bronze",
+        default="raw",
         alias="schema",
         description="Databricks schema to scan for anomalies.",
     )
@@ -110,6 +112,13 @@ class AcceptSchemaResponse(BaseModel):
     message: str
 
 
+class ResetHistoryResponse(BaseModel):
+    """Response for clearing saved acceptance history."""
+
+    success: bool
+    message: str
+
+
 class AnomalyResponse(BaseModel):
     """Response model for anomaly detection."""
 
@@ -127,6 +136,39 @@ class ReportSubmission(BaseModel):
     """Payload for submitting a report from Databricks."""
 
     report_data: dict
+
+
+def _load_thresholds_state() -> dict:
+    """Return the saved threshold and schema acceptance state."""
+    if not THRESHOLDS_FILE.exists():
+        return {}
+    try:
+        payload = json.loads(THRESHOLDS_FILE.read_text(encoding="utf-8"))
+    except Exception as exc:
+        logger.error("Failed to read thresholds file: %s", exc)
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _write_thresholds_state(payload: dict) -> None:
+    """Persist threshold and schema acceptance state atomically."""
+    try:
+        atomic_write_json(THRESHOLDS_FILE, payload)
+    except Exception as exc:
+        logger.error("Failed to write thresholds file: %s", exc)
+        raise HTTPException(status_code=500, detail="Failed to save thresholds") from exc
+
+
+def _delete_thresholds_state() -> bool:
+    """Delete the saved threshold and schema acceptance state."""
+    if not THRESHOLDS_FILE.exists():
+        return False
+    try:
+        THRESHOLDS_FILE.unlink()
+    except Exception as exc:
+        logger.error("Failed to delete thresholds file: %s", exc)
+        raise HTTPException(status_code=500, detail="Failed to reset accepted history") from exc
+    return True
 
 
 def _run_pipeline_background(schema_name: str) -> None:
@@ -326,16 +368,9 @@ async def validate_data():
 )
 async def accept_thresholds(request: AcceptThresholdsRequest):
     """Save custom threshold overrides for a table."""
-    thresholds_file = PROJECT_ROOT / "table_thresholds.json"
     short_name = request.table_name.split(".")[-1]
 
-    current_thresholds = {}
-    if thresholds_file.exists():
-        try:
-            current_thresholds = json.loads(thresholds_file.read_text(encoding="utf-8"))
-        except Exception as exc:
-            logger.error("Failed to read thresholds file: %s", exc)
-
+    current_thresholds = _load_thresholds_state()
     current_thresholds.setdefault(short_name, {})
 
     if request.min_val is not None:
@@ -345,12 +380,7 @@ async def accept_thresholds(request: AcceptThresholdsRequest):
 
     current_thresholds[short_name]["accepted_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-    try:
-        thresholds_file.write_text(json.dumps(current_thresholds, indent=2), encoding="utf-8")
-    except Exception as exc:
-        logger.error("Failed to write threshold file: %s", exc)
-        raise HTTPException(status_code=500, detail="Failed to save thresholds")
-
+    _write_thresholds_state(current_thresholds)
     return AcceptThresholdsResponse(success=True, message=f"Thresholds updated for {short_name}")
 
 
@@ -358,21 +388,14 @@ async def accept_thresholds(request: AcceptThresholdsRequest):
     "/api/accept_schema",
     response_model=AcceptSchemaResponse,
     summary="Accept schema findings for a table",
-    description="Records accepted schema columns in accepted_schemas.json. "
+    description="Records accepted schema columns in table_thresholds.json. "
     "Accepted columns won't re-trigger as anomalies unless their data type changes.",
 )
 async def accept_schema(request: AcceptSchemaRequest):
     """Save accepted schema findings into the single thresholds file."""
-    thresholds_file = PROJECT_ROOT / "table_thresholds.json"
     short_name = request.table_name.split(".")[-1]
 
-    data: dict = {}
-    if thresholds_file.exists():
-        try:
-            data = json.loads(thresholds_file.read_text(encoding="utf-8"))
-        except Exception as exc:
-            logger.error("Failed to read thresholds file: %s", exc)
-
+    data = _load_thresholds_state()
     data.setdefault(short_name, {})
     data[short_name].setdefault("accepted_columns", [])
 
@@ -389,12 +412,7 @@ async def accept_schema(request: AcceptSchemaRequest):
     data[short_name]["accepted_columns"] = list(existing.values())
     data[short_name]["schema_accepted_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-    try:
-        thresholds_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    except Exception as exc:
-        logger.error("Failed to write thresholds file: %s", exc)
-        raise HTTPException(status_code=500, detail="Failed to save accepted schemas")
-
+    _write_thresholds_state(data)
     return AcceptSchemaResponse(success=True, message=f"Schema accepted for {short_name}")
 
 
@@ -406,15 +424,7 @@ async def accept_schema(request: AcceptSchemaRequest):
 )
 async def get_accepted_state():
     """Read the single thresholds file and return accepted state for the frontend."""
-    thresholds_file = PROJECT_ROOT / "table_thresholds.json"
-
-    data: dict = {}
-    if thresholds_file.exists():
-        try:
-            data = json.loads(thresholds_file.read_text(encoding="utf-8"))
-        except Exception as exc:
-            logger.error("Failed to read thresholds file: %s", exc)
-
+    data = _load_thresholds_state()
     accepted_tables = {}
     accepted_schemas = {}
 
@@ -441,6 +451,24 @@ async def get_accepted_state():
         "accepted_tables": accepted_tables,
         "accepted_schemas": accepted_schemas
     }
+
+
+@app.delete(
+    "/api/accepted_state",
+    response_model=ResetHistoryResponse,
+    summary="Reset accepted history",
+    description="Deletes saved table thresholds and schema acceptances so hidden anomalies appear again.",
+)
+async def reset_accepted_state():
+    """Clear the saved threshold and schema acceptance history."""
+    removed = _delete_thresholds_state()
+    message = (
+        "Accepted anomaly history reset."
+        if removed
+        else "Accepted anomaly history was already empty."
+    )
+    return ResetHistoryResponse(success=True, message=message)
+
 
 def _get_latest_file(directory: Path, filename: str) -> Path | None:
     """Find the target file first in the latest run sub-dir, then directly in the directory."""
