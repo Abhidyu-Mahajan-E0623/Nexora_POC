@@ -1,0 +1,20 @@
+{
+  "captured_at": "2026-04-14T00:00:00+00:00",
+  "catalog": "nexora_poc_catalog",
+  "schema": "bronze",
+  "table": "sales_data",
+  "columns": [
+    {
+      "name": "hco_id",
+      "data_type": "string"
+    },
+    {
+      "name": "invoice_date",
+      "data_type": "date"
+    },
+    {
+      "name": "total_sales",
+      "data_type": "bigint"
+    }
+  ]
+}

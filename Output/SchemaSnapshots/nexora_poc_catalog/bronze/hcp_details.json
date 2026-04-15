@@ -1,0 +1,28 @@
+{
+  "captured_at": "2026-04-14T00:00:00+00:00",
+  "catalog": "nexora_poc_catalog",
+  "schema": "bronze",
+  "table": "hcp_details",
+  "columns": [
+    {
+      "name": "hco_id",
+      "data_type": "string"
+    },
+    {
+      "name": "hcp_id",
+      "data_type": "bigint"
+    },
+    {
+      "name": "hcp_name",
+      "data_type": "string"
+    },
+    {
+      "name": "hcp_segment",
+      "data_type": "string"
+    },
+    {
+      "name": "kol_flag",
+      "data_type": "string"
+    }
+  ]
+}

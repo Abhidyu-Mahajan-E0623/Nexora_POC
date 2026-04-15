@@ -11,7 +11,8 @@ __pycache__/
 *.pyo
 
 # Data folders (runtime generated)
-Output/
+Output/*
+!Output/SchemaSnapshots/
 Input/
 
 # IDE

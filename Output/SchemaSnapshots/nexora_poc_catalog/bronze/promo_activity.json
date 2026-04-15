@@ -1,0 +1,32 @@
+{
+  "captured_at": "2026-04-14T00:00:00+00:00",
+  "catalog": "nexora_poc_catalog",
+  "schema": "bronze",
+  "table": "promo_activity",
+  "columns": [
+    {
+      "name": "activity_date",
+      "data_type": "date"
+    },
+    {
+      "name": "hco_id",
+      "data_type": "string"
+    },
+    {
+      "name": "promo_channel",
+      "data_type": "string"
+    },
+    {
+      "name": "total_calls",
+      "data_type": "bigint"
+    },
+    {
+      "name": "total_rte",
+      "data_type": "bigint"
+    },
+    {
+      "name": "total_samples",
+      "data_type": "bigint"
+    }
+  ]
+}
