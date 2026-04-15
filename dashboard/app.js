@@ -115,68 +115,81 @@ var app = {
         var controller = new AbortController();
         self.state.abortController = controller;
 
-        // Fire the pipeline (returns immediately)
-        fetch("/api/anomaly", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(extraBody || { schema: self.DEFAULT_SCHEMA }),
-            signal: controller.signal
-        })
-        .then(function(res) {
-            if (!res.ok) throw new Error("Pipeline returned HTTP " + res.status);
-            return res.json();
-        })
-        .then(function() {
-            // Poll /api/anomaly/status until done
-            var pollInterval = setInterval(function() {
-                if (controller.signal.aborted) {
-                    clearInterval(pollInterval);
-                    return;
-                }
-                fetch("/api/anomaly/status", { signal: controller.signal })
-                .then(function(res) { return res.json(); })
-                .then(function(data) {
-                    if (data.status === "done") {
-                        clearInterval(pollInterval);
-                        clearInterval(timer);
-                        for (var j = 0; j < stepEls.length; j++) {
-                            stepEls[j].classList.remove("active");
-                            stepEls[j].classList.add("done");
-                        }
-                        self.state.abortController = null;
-                        self.state.resolvedDetectors = {};
-                        self.state.anomalyData = data.report_data || self.parsers.anomaly(data.report_text || "");
-                        // Load accepted state from server before rendering
-                        fetch("/api/accepted_state")
-                            .then(function(res) { return res.ok ? res.json() : {}; })
-                            .then(function(acc) {
-                                self.state.acceptedTables = (acc && acc.accepted_tables) || {};
-                                self.state.acceptedSchemas = (acc && acc.accepted_schemas) || {};
-                            })
-                            .catch(function() { /* proceed with empty state */ })
-                            .then(function() {
-                                self.renderers.anomaly(self.state.anomalyData);
-                                self.navigate("anomaly");
-                            });
-                    } else if (data.status === "error") {
-                        clearInterval(pollInterval);
-                        clearInterval(timer);
-                        self.state.abortController = null;
-                        alert("Pipeline error: " + (data.error || "Unknown error"));
-                        self.navigate("home");
+        // Fire the pipeline with retry logic to handle Render 502 cold-starts/deployments
+        function startPipeline(retriesLeft) {
+            fetch("/api/anomaly", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(extraBody || { schema: self.DEFAULT_SCHEMA }),
+                signal: controller.signal
+            })
+            .then(function(res) {
+                if (!res.ok) {
+                    if (res.status === 502 && retriesLeft > 0) {
+                        console.warn("Got HTTP 502 from Render, retrying in 4 seconds... (" + retriesLeft + " attempts left)");
+                        setTimeout(function() { startPipeline(retriesLeft - 1); }, 4000);
+                        return null; // Return null to skip next .then blocks
                     }
-                    // else status === "running" → keep polling
-                })
-                .catch(function() { /* ignore transient fetch errors during polling */ });
-            }, 3000);
-        })
-        .catch(function(err) {
-            clearInterval(timer);
-            self.state.abortController = null;
-            if (err.name === "AbortError") return;
-            alert("Pipeline error: " + err.message);
-            self.navigate("home");
-        });
+                    throw new Error("Pipeline returned HTTP " + res.status);
+                }
+                return res.json();
+            })
+            .then(function(data) {
+                if (!data) return; // Skip if we are retrying
+                
+                // Poll /api/anomaly/status until done
+                var pollInterval = setInterval(function() {
+                    if (controller.signal.aborted) {
+                        clearInterval(pollInterval);
+                        return;
+                    }
+                    fetch("/api/anomaly/status", { signal: controller.signal })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        if (data.status === "done") {
+                            clearInterval(pollInterval);
+                            clearInterval(timer);
+                            for (var j = 0; j < stepEls.length; j++) {
+                                stepEls[j].classList.remove("active");
+                                stepEls[j].classList.add("done");
+                            }
+                            self.state.abortController = null;
+                            self.state.resolvedDetectors = {};
+                            self.state.anomalyData = data.report_data || self.parsers.anomaly(data.report_text || "");
+                            // Load accepted state from server before rendering
+                            fetch("/api/accepted_state")
+                                .then(function(res) { return res.ok ? res.json() : {}; })
+                                .then(function(acc) {
+                                    self.state.acceptedTables = (acc && acc.accepted_tables) || {};
+                                    self.state.acceptedSchemas = (acc && acc.accepted_schemas) || {};
+                                })
+                                .catch(function() { /* proceed with empty state */ })
+                                .then(function() {
+                                    self.renderers.anomaly(self.state.anomalyData);
+                                    self.navigate("anomaly");
+                                });
+                        } else if (data.status === "error") {
+                            clearInterval(pollInterval);
+                            clearInterval(timer);
+                            self.state.abortController = null;
+                            alert("Pipeline error: " + (data.error || "Unknown error"));
+                            self.navigate("home");
+                        }
+                        // else status === "running" → keep polling
+                    })
+                    .catch(function() { /* ignore transient fetch errors during polling */ });
+                }, 3000);
+            })
+            .catch(function(err) {
+                clearInterval(timer);
+                self.state.abortController = null;
+                if (err.name === "AbortError") return;
+                alert("Pipeline error: " + err.message);
+                self.navigate("home");
+            });
+        }
+        
+        startPipeline(3);
     },
 
     parsers: {
