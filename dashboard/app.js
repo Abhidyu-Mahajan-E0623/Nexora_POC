@@ -1,10 +1,9 @@
 var app = {
     TABLE_DESCRIPTIONS: {
-        "account": "Tracks whether CRM account creation volume stays within the expected weekly range.",
-        "em_event_vod__c": "Monitors speaker-program attendance fill rate using actual attendance divided by estimated attendance.",
-        "suggestion_vod__c": "Watches whether urgent next-best-action suggestions are taking a higher or lower share than expected.",
-        "suggestion_feedback_vod__c": "Tracks sales-execution feedback volume from reps responding to suggestions and call objectives.",
-        "time_off_territory_vod__c": "Monitors field-force time-off volume that can affect sales coverage and territory capacity."
+        "hco_details": "Monitors healthcare organization data for unexpected changes in clinic tracking.",
+        "hcp_details": "Monitors healthcare professional demographics and segment statuses.",
+        "promo_activity": "Monitors promotional activities, tracking total calls and samples given out to professionals.",
+        "sales_data": "Monitors local sales trends, anomalies and patterns per organization."
     },
 
     REVIEW_URL: "https://httpbin.org/html",
